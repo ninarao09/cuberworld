@@ -1,5 +1,11 @@
 {
   "version": 2,
+  "git": {
+    "deploymentEnabled": {
+      "master": true,
+      "dev": true
+    }
+  },
   "buildCommand": "npm run build",
   "outputDirectory": "build/client",
   "functions": {
