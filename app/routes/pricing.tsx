@@ -1,7 +1,7 @@
 import { Link, useLoaderData } from "react-router";
 import type { Route } from "./+types/pricing";
 import { getSupabaseServerClient } from "../lib/supabase.server";
-import { PLANS, TRIAL_DAYS } from "../lib/stripe.server";
+const TRIAL_DAYS = 7;
 
 export function meta() {
   return [{ title: "Pricing | CuberWorld" }];

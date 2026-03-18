@@ -190,6 +190,25 @@ function computeMove(
   return null;
 }
 
+// Rotation axis for positive-angle = CW move
+// U=-Y, D=+Y, R=+X, L=-X, F=-Z, B=+Z
+function getMoveAxis(THREE: any, moveStr: string): any {
+  const base = moveStr.replace(/[' 2]/g, "");
+  const map: Record<string,[number,number,number]> = {
+    U:[0,-1,0], D:[0,1,0], R:[1,0,0], L:[-1,0,0], F:[0,0,-1], B:[0,0,1],
+  };
+  const [x,y,z] = map[base] ?? [0,1,0];
+  const v = new THREE.Vector3(x,y,z);
+  if (moveStr.includes("'")) v.negate();
+  return v;
+}
+
+function invertMove(m: string): string {
+  if (m.endsWith("'")) return m.slice(0,-1);
+  if (m.endsWith("2")) return m;
+  return m + "'";
+}
+
 // ─── 3D Cube Component ──────────────────────────────────────────────────────
 
 function ThreeCube({ cubeState, onMove }: { cubeState: CubeState; onMove: (m: string) => void }) {
@@ -255,47 +274,125 @@ function ThreeCube({ cubeState, onMove }: { cubeState: CubeState; onMove: (m: st
       // Build with latest state (use ref in case scramble was pressed during load)
       buildCube(scene, THREE, stateRef.current);
 
-      // ── Mouse drag for face rotation ──────────────────────────────────────
+      // ── Animated face drag ────────────────────────────────────────────────
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
-      let dragStart: { x: number; y: number } | null = null;
-      let hitFaceIndex = -1;
-      let hitCubiePos: any = null;
+
+      type DragInfo = {
+        mouseStart: { x: number; y: number };
+        initDir: { x: number; y: number };   // unit vector of initial drag
+        faceIndex: number;
+        cubiePos: any;
+        group: any;                           // THREE.Group for rotating slice
+        rotAxis: any;                         // THREE.Vector3
+        moveStr: string;                      // e.g. "U", "R'"
+        angle: number;                        // current rotation angle (radians)
+      };
+
+      let pending: { faceIndex: number; cubiePos: any } | null = null;
+      let drag: DragInfo | null = null;
+      const PIXELS_PER_90 = 160;
+
+      function finishDrag() {
+        if (!drag) return;
+        const quarterTurns = Math.round(drag.angle / (Math.PI / 2));
+        const snapped = quarterTurns * Math.PI / 2;
+        drag.group.setRotationFromAxisAngle(drag.rotAxis, snapped);
+        drag.group.updateMatrixWorld(true);
+
+        // Detach cubies back to scene
+        const cubies = [...drag.group.children];
+        for (const c of cubies) {
+          const wp = new THREE.Vector3();
+          const wq = new THREE.Quaternion();
+          c.getWorldPosition(wp); c.getWorldQuaternion(wq);
+          drag.group.remove(c);
+          c.position.copy(wp); c.quaternion.copy(wq);
+          scene.add(c);
+        }
+        scene.remove(drag.group);
+
+        // Execute move and rebuild
+        scene.children.filter((c: any) => c.userData?.isCubie).forEach((c: any) => scene.remove(c));
+        if (Math.abs(quarterTurns) >= 1) {
+          const moveStr = quarterTurns > 0 ? drag.moveStr : invertMove(drag.moveStr);
+          const newState = applyMove(stateRef.current, moveStr);
+          buildCube(scene, THREE, newState);
+          onMoveRef.current(moveStr);
+        } else {
+          buildCube(scene, THREE, stateRef.current);
+        }
+        drag = null;
+      }
 
       renderer.domElement.addEventListener("mousedown", (e: MouseEvent) => {
         const rect = renderer.domElement.getBoundingClientRect();
         mouse.set(
           ((e.clientX - rect.left) / rect.width)  * 2 - 1,
-         -((e.clientY - rect.top)  / rect.height) * 2 + 1
+         -((e.clientY - rect.top)  / rect.height) * 2 + 1,
         );
         raycaster.setFromCamera(mouse, camera);
         const cubies = scene.children.filter((c: any) => c.userData?.isCubie);
         const hits = raycaster.intersectObjects(cubies, false);
         if (hits.length > 0) {
-          hitFaceIndex = hits[0].face?.materialIndex ?? -1;
-          hitCubiePos  = hits[0].object.position.clone();
-          dragStart    = { x: e.clientX, y: e.clientY };
+          pending = { faceIndex: hits[0].face?.materialIndex ?? -1, cubiePos: hits[0].object.position.clone(), _startX: e.clientX, _startY: e.clientY } as any;
           controls.enabled = false;
         }
       });
 
-      renderer.domElement.addEventListener("mouseup", (e: MouseEvent) => {
-        if (dragStart && hitFaceIndex >= 0 && hitCubiePos) {
-          const dx = e.clientX - dragStart.x;
-          const dy = e.clientY - dragStart.y;
-          if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-            const move = computeMove(THREE, camera, hitFaceIndex, hitCubiePos, dx, dy);
-            if (move) onMoveRef.current(move);
-          }
+      renderer.domElement.addEventListener("mousemove", (e: MouseEvent) => {
+        if (!pending && !drag) return;
+
+        if (drag) {
+          // Project total drag onto initial direction → rotation angle
+          const totalDx = e.clientX - drag.mouseStart.x;
+          const totalDy = e.clientY - drag.mouseStart.y;
+          const proj = totalDx * drag.initDir.x + totalDy * drag.initDir.y;
+          drag.angle = (proj / PIXELS_PER_90) * (Math.PI / 2);
+          drag.group.setRotationFromAxisAngle(drag.rotAxis, drag.angle);
+          return;
         }
-        dragStart = null; hitFaceIndex = -1; hitCubiePos = null;
-        controls.enabled = true;
+
+        if (pending) {
+          const pdx = e.clientX - (pending as any)._startX;
+          const pdy = e.clientY - (pending as any)._startY;
+          const dist = Math.sqrt(pdx*pdx + pdy*pdy);
+          if (dist < 8) return;
+
+          // Determine move and axis
+          const moveStr = computeMove(THREE, camera, pending.faceIndex, pending.cubiePos, pdx, pdy);
+          if (!moveStr) { pending = null; controls.enabled = true; return; }
+
+          const rotAxis = getMoveAxis(THREE, moveStr);
+          const baseMove = moveStr.replace(/[' 2]/g,'');
+          const sliceName = (['R','L'].includes(baseMove) ? 'x' : ['U','D'].includes(baseMove) ? 'y' : 'z') as 'x'|'y'|'z';
+          const slicePos = sliceName === 'x' ? Math.round(pending.cubiePos.x)
+                         : sliceName === 'y' ? Math.round(pending.cubiePos.y)
+                         : Math.round(pending.cubiePos.z);
+
+          // Build group for this slice
+          const group = new THREE.Group();
+          scene.add(group);
+          scene.children
+            .filter((c: any) => c.userData?.isCubie && Math.round(
+              sliceName === 'x' ? c.position.x : sliceName === 'y' ? c.position.y : c.position.z
+            ) === slicePos)
+            .forEach((c: any) => { scene.remove(c); group.add(c); });
+
+          drag = {
+            mouseStart: { x: (pending as any)._startX, y: (pending as any)._startY },
+            initDir: { x: pdx / dist, y: pdy / dist },
+            faceIndex: pending.faceIndex,
+            cubiePos: pending.cubiePos,
+            group, rotAxis, moveStr, angle: 0,
+          };
+          pending = null;
+        }
       });
 
-      renderer.domElement.addEventListener("mouseleave", () => {
-        dragStart = null; hitFaceIndex = -1; hitCubiePos = null;
-        controls.enabled = true;
-      });
+      const endDrag = () => { finishDrag(); pending = null; controls.enabled = true; };
+      renderer.domElement.addEventListener("mouseup", endDrag);
+      renderer.domElement.addEventListener("mouseleave", endDrag);
       // ─────────────────────────────────────────────────────────────────────
 
       const animate = () => {
