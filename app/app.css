@@ -1,15 +1,361 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap');
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+:root {
+  --green: #00ff41;
+  --cyan: #00ffff;
+  --magenta: #ff00ff;
+  --yellow: #ffff00;
+  --red: #ff4444;
+  --bg: #030a03;
+  --bg2: #060f06;
+  --bg3: #0a170a;
+  --border: #1a4a1a;
+  --text-dim: #44aa44;
 }
 
-html,
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
 body {
-  @apply bg-white dark:bg-gray-950;
-
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
-  }
+  background-color: var(--bg);
+  color: var(--green);
+  font-family: 'VT323', monospace;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  overflow-x: hidden;
+  min-height: 100vh;
 }
+
+/* CRT Scanlines */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 3px,
+    rgba(0, 0, 0, 0.08) 3px, rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* CRT vignette */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.5) 100%);
+  pointer-events: none;
+  z-index: 9997;
+}
+
+/* Typography */
+.font-pixel { font-family: 'Press Start 2P', monospace; }
+.font-retro { font-family: 'VT323', monospace; }
+
+h1, h2, h3 {
+  font-family: 'Press Start 2P', monospace;
+  text-shadow: 0 0 10px var(--green), 0 0 20px var(--green);
+}
+
+/* Neon glows */
+.neon-green {
+  color: var(--green);
+  text-shadow: 0 0 7px var(--green), 0 0 10px var(--green), 0 0 21px var(--green);
+}
+.neon-cyan {
+  color: var(--cyan);
+  text-shadow: 0 0 7px var(--cyan), 0 0 10px var(--cyan), 0 0 21px var(--cyan);
+}
+.neon-magenta {
+  color: var(--magenta);
+  text-shadow: 0 0 7px var(--magenta), 0 0 10px var(--magenta), 0 0 21px var(--magenta);
+}
+.neon-yellow {
+  color: var(--yellow);
+  text-shadow: 0 0 7px var(--yellow), 0 0 10px var(--yellow);
+}
+
+/* Retro boxes */
+.retro-box {
+  background: var(--bg2);
+  border: 2px solid var(--green);
+  box-shadow: 0 0 8px var(--green), inset 0 0 8px rgba(0, 255, 65, 0.05);
+  padding: 1.5rem;
+}
+.retro-box-cyan {
+  background: var(--bg2);
+  border: 2px solid var(--cyan);
+  box-shadow: 0 0 8px var(--cyan), inset 0 0 8px rgba(0, 255, 255, 0.05);
+  padding: 1.5rem;
+}
+.retro-box-magenta {
+  background: var(--bg2);
+  border: 2px solid var(--magenta);
+  box-shadow: 0 0 8px var(--magenta), inset 0 0 8px rgba(255, 0, 255, 0.05);
+  padding: 1.5rem;
+}
+
+/* Buttons */
+.btn-retro {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.65rem;
+  padding: 0.75rem 1.25rem;
+  background: transparent;
+  border: 2px solid var(--green);
+  color: var(--green);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.15s;
+  text-shadow: 0 0 7px var(--green);
+  box-shadow: 0 0 8px var(--green);
+  display: inline-block;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+.btn-retro:hover {
+  background: rgba(0, 255, 65, 0.15);
+  box-shadow: 0 0 20px var(--green), 0 0 40px rgba(0, 255, 65, 0.3);
+  transform: translateY(-1px);
+}
+.btn-retro:active { transform: translateY(1px); }
+
+.btn-retro-cyan {
+  border-color: var(--cyan); color: var(--cyan);
+  text-shadow: 0 0 7px var(--cyan); box-shadow: 0 0 8px var(--cyan);
+}
+.btn-retro-cyan:hover {
+  background: rgba(0, 255, 255, 0.15);
+  box-shadow: 0 0 20px var(--cyan), 0 0 40px rgba(0, 255, 255, 0.3);
+}
+.btn-retro-magenta {
+  border-color: var(--magenta); color: var(--magenta);
+  text-shadow: 0 0 7px var(--magenta); box-shadow: 0 0 8px var(--magenta);
+}
+.btn-retro-magenta:hover {
+  background: rgba(255, 0, 255, 0.15);
+  box-shadow: 0 0 20px var(--magenta), 0 0 40px rgba(255, 0, 255, 0.3);
+}
+.btn-retro-yellow {
+  border-color: var(--yellow); color: var(--yellow);
+  text-shadow: 0 0 7px var(--yellow); box-shadow: 0 0 8px var(--yellow);
+}
+.btn-retro-yellow:hover { background: rgba(255, 255, 0, 0.15); box-shadow: 0 0 20px var(--yellow); }
+
+/* Navigation */
+.nav-retro {
+  background: rgba(3, 10, 3, 0.97);
+  border-bottom: 2px solid var(--green);
+  box-shadow: 0 2px 15px rgba(0, 255, 65, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+.nav-link {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 0.5rem 0.6rem;
+  transition: color 0.2s;
+}
+.nav-link:hover, .nav-link.active {
+  color: var(--green);
+  text-shadow: 0 0 7px var(--green);
+}
+
+/* Form inputs */
+.input-retro {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-bottom: 2px solid var(--green);
+  color: var(--green);
+  font-family: 'VT323', monospace;
+  font-size: 1.1rem;
+  padding: 0.6rem 0.75rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-retro:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+.input-retro::placeholder { color: var(--border); }
+.label-retro {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+/* Algorithm cards */
+.algo-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.algo-card:hover { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0, 255, 255, 0.2); }
+.algo-card.learned { border-color: var(--green); box-shadow: 0 0 10px rgba(0, 255, 65, 0.3); }
+.algo-card.learned::after {
+  content: '✓ LEARNED';
+  position: absolute;
+  top: 0.4rem; right: 0.5rem;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.4rem;
+  color: var(--green);
+  text-shadow: 0 0 5px var(--green);
+}
+
+/* Animations */
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.blink { animation: blink 1s step-end infinite; }
+
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(2px, -2px); }
+  60% { transform: translate(-1px, 1px); }
+  80% { transform: translate(1px, -1px); }
+  100% { transform: translate(0); }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 24px; height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border: 1px solid var(--green); }
+::-webkit-scrollbar-thumb:hover { background: var(--green); }
+
+/* Tables */
+.retro-table { width: 100%; border-collapse: collapse; }
+.retro-table th {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  color: var(--cyan);
+  border-bottom: 2px solid var(--cyan);
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+.retro-table td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); }
+.retro-table tr:hover td { background: rgba(0, 255, 65, 0.04); }
+
+/* Move notation chip */
+.move-chip {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  color: var(--cyan);
+  background: rgba(0, 255, 255, 0.07);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  padding: 0.15rem 0.4rem;
+  display: inline-block;
+  margin: 0.1rem;
+}
+
+/* Progress bar */
+.progress-bar { background: var(--bg3); border: 1px solid var(--border); height: 10px; overflow: hidden; }
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--cyan));
+  box-shadow: 0 0 8px var(--green);
+  transition: width 0.5s ease;
+}
+
+/* Sticker colors */
+.sticker-white  { background: #ffffff; }
+.sticker-yellow { background: #ffdd00; }
+.sticker-green  { background: #00cc44; }
+.sticker-blue   { background: #0055ff; }
+.sticker-red    { background: #ee1111; }
+.sticker-orange { background: #ff8800; }
+
+/* Alert */
+.alert-retro {
+  border-left: 4px solid var(--green);
+  background: rgba(0, 255, 65, 0.05);
+  padding: 0.75rem 1rem;
+}
+.alert-error { border-left-color: var(--red); background: rgba(255, 68, 68, 0.05); color: var(--red); }
+.alert-warning { border-left-color: var(--yellow); background: rgba(255, 255, 0, 0.05); color: var(--yellow); }
+
+/* Pricing cards */
+.pricing-card {
+  background: var(--bg2);
+  border: 2px solid var(--border);
+  padding: 2rem;
+  transition: all 0.3s;
+}
+.pricing-card.featured {
+  border-color: var(--cyan);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+.pricing-card:hover { transform: translateY(-4px); }
+
+/* Tab nav */
+.tab-retro {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  color: var(--text-dim);
+  background: transparent;
+  transition: all 0.2s;
+}
+.tab-retro.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0, 255, 255, 0.05); }
+.tab-retro:hover:not(.active) { color: var(--green); border-color: var(--green); }
+
+/* Retro checkbox */
+.retro-checkbox {
+  appearance: none;
+  width: 18px; height: 18px;
+  border: 2px solid var(--green);
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.retro-checkbox:checked { background: rgba(0, 255, 65, 0.3); box-shadow: 0 0 6px var(--green); }
+.retro-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: -3px; left: 1px;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Section header */
+.section-header {
+  font-family: 'Press Start 2P', monospace;
+  color: var(--green);
+  text-shadow: 0 0 10px var(--green);
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Divider */
+.retro-divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
