@@ -1,16 +1,23 @@
 import { createRequestListener } from "@react-router/node";
+import * as reactRouter from "react-router";
 
 export const config = {
   includeFiles: ["build/**"],
 };
 
+const createRequestHandler =
+  reactRouter.createRequestHandler ?? reactRouter.default?.createRequestHandler;
+
 let listener;
 
 async function getListener() {
   if (!listener) {
-    // Pass entire module namespace — not just .default
     const build = await import("../build/server/index.js");
-    listener = createRequestListener(build);
+    // React Router v7 server build exports named fields (routes, entry, assets…)
+    // createRequestHandler accepts the module namespace directly
+    const serverBuild = build.default ?? build;
+    const reqHandler = createRequestHandler(serverBuild);
+    listener = createRequestListener(reqHandler);
   }
   return listener;
 }
