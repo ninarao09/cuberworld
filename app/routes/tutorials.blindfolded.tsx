@@ -206,7 +206,7 @@ export default function BlindSolvePage() {
               {/* Show T-Perm algorithm inline */}
               {item.heading === "THE T-PERM" && (
                 <div style={{ marginTop: "0.75rem" }}>
-                  <div className="font-retro" style={{ color: "var(--cyan)", fontSize: "1.1rem", fontFamily: "'Press Start 2P', monospace", fontSize: "0.7rem" }}>
+                  <div className="font-retro" style={{ color: "var(--cyan)", fontFamily: "'Press Start 2P', monospace", fontSize: "0.7rem" }}>
                     R U R' U' R' F R2 U' R' U' R U R' F'
                   </div>
                 </div>
