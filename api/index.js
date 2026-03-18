@@ -13,8 +13,9 @@ let listener;
 async function getListener() {
   if (!listener) {
     const build = await import("../build/server/index.js");
-    // React Router v7 server build exports named fields (routes, entry, assets…)
-    // createRequestHandler accepts the module namespace directly
+    console.log("build keys:", Object.keys(build));
+    console.log("build.default type:", typeof build.default);
+    console.log("build.default keys:", build.default ? Object.keys(build.default) : "none");
     const serverBuild = build.default ?? build;
     const reqHandler = createRequestHandler(serverBuild);
     listener = createRequestListener(reqHandler);
