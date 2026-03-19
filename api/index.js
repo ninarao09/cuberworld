@@ -1,41 +1,33 @@
 import { createRequestListener } from "@react-router/node";
-import * as reactRouter from "react-router";
+import { existsSync, readdirSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 export const config = {
   includeFiles: ["build/**"],
 };
 
-const createRequestHandler =
-  reactRouter.createRequestHandler ?? reactRouter.default?.createRequestHandler;
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 let listener;
 
 async function getListener() {
   if (!listener) {
-    let build;
-    try {
-      build = await import("../build/server/index.js");
-      console.log("[build] keys:", Object.keys(build));
-      console.log("[build] default type:", typeof build.default);
-      console.log("[build] default keys:", build.default ? Object.keys(build.default) : "none");
-      console.log("[build] has routes:", "routes" in build, "has entry:", "entry" in build);
-    } catch (importErr) {
-      console.error("[build] IMPORT FAILED:", String(importErr));
-      throw importErr;
+    // Debug: verify build files exist
+    const buildDir = join(__dirname, "..", "build");
+    const serverBuildPath = join(buildDir, "server", "index.js");
+    console.log("[fs] buildDir:", buildDir);
+    console.log("[fs] buildDir exists:", existsSync(buildDir));
+    console.log("[fs] server/index.js exists:", existsSync(serverBuildPath));
+    if (existsSync(buildDir)) {
+      console.log("[fs] build contents:", readdirSync(buildDir));
     }
 
-    // Try all possible shapes React Router v7 might export
-    const serverBuild =
-      build.default?.routes ? build.default :
-      build.routes ? build :
-      null;
+    const build = await import(serverBuildPath);
+    console.log("[build] keys:", Object.keys(build));
 
-    console.log("[build] serverBuild shape:", serverBuild ? Object.keys(serverBuild) : "NULL");
-
-    if (!serverBuild) throw new Error("Could not resolve server build — no routes found");
-
-    const reqHandler = createRequestHandler(serverBuild);
-    listener = createRequestListener(reqHandler);
+    // createRequestListener accepts the build directly in @react-router/node v7
+    listener = createRequestListener(build);
   }
   return listener;
 }
