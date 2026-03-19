@@ -1,26 +1,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap');
 @import "tailwindcss";
 
+/* ── Rubik's Cube Color Palette ─────────────────────────────────────── */
 :root {
-  --green: #00ff41;
-  --cyan: #00ffff;
-  --magenta: #ff00ff;
-  --yellow: #ffff00;
-  --red: #ff4444;
-  --bg: #030a03;
-  --bg2: #060f06;
-  --bg3: #0a170a;
-  --border: #1a4a1a;
-  --text-dim: #44aa44;
+  --red:    #e8253a;
+  --blue:   #3b6ff0;
+  --yellow: #f5c400;
+  --orange: #f57c00;
+  --green:  #22a85a;
+  --white:  #f0f0f0;
+
+  --bg:     #12112b;   /* deep indigo — much easier on eyes than pure black */
+  --bg2:    #1c1b38;
+  --bg3:    #252445;
+  --border: #3a3860;
+  --text:   #e8e4f0;
+  --dim:    #9896c0;
 }
 
 * { box-sizing: border-box; }
-
 html { scroll-behavior: smooth; }
 
 body {
   background-color: var(--bg);
-  color: var(--green);
+  color: var(--text);
   font-family: 'VT323', monospace;
   font-size: 1.2rem;
   line-height: 1.6;
@@ -28,7 +31,7 @@ body {
   min-height: 100vh;
 }
 
-/* CRT Scanlines */
+/* Very subtle scanlines — barely visible, just a hint of retro */
 body::before {
   content: '';
   position: fixed;
@@ -36,326 +39,468 @@ body::before {
   width: 100%; height: 100%;
   background: repeating-linear-gradient(
     0deg,
-    transparent, transparent 3px,
-    rgba(0, 0, 0, 0.08) 3px, rgba(0, 0, 0, 0.08) 4px
+    transparent, transparent 4px,
+    rgba(0, 0, 0, 0.03) 4px, rgba(0, 0, 0, 0.03) 5px
   );
   pointer-events: none;
-  z-index: 9998;
+  z-index: 9999;
 }
 
-/* CRT vignette */
-body::after {
-  content: '';
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.5) 100%);
-  pointer-events: none;
-  z-index: 9997;
-}
-
-/* Typography */
+/* ── Typography ─────────────────────────────────────────────────────── */
 .font-pixel { font-family: 'Press Start 2P', monospace; }
 .font-retro { font-family: 'VT323', monospace; }
 
 h1, h2, h3 {
   font-family: 'Press Start 2P', monospace;
-  text-shadow: 0 0 10px var(--green), 0 0 20px var(--green);
-}
-
-/* Neon glows */
-.neon-green {
-  color: var(--green);
-  text-shadow: 0 0 7px var(--green), 0 0 10px var(--green), 0 0 21px var(--green);
-}
-.neon-cyan {
-  color: var(--cyan);
-  text-shadow: 0 0 7px var(--cyan), 0 0 10px var(--cyan), 0 0 21px var(--cyan);
-}
-.neon-magenta {
-  color: var(--magenta);
-  text-shadow: 0 0 7px var(--magenta), 0 0 10px var(--magenta), 0 0 21px var(--magenta);
-}
-.neon-yellow {
   color: var(--yellow);
-  text-shadow: 0 0 7px var(--yellow), 0 0 10px var(--yellow);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.5), 0 0 12px rgba(245, 196, 0, 0.3);
 }
 
-/* Retro boxes */
+/* ── Rubik's color accent classes ───────────────────────────────────── */
+.cube-red    { color: var(--red);    text-shadow: 0 0 8px rgba(232,37,58,0.5); }
+.cube-blue   { color: var(--blue);   text-shadow: 0 0 8px rgba(59,111,240,0.5); }
+.cube-yellow { color: var(--yellow); text-shadow: 0 0 8px rgba(245,196,0,0.5); }
+.cube-orange { color: var(--orange); text-shadow: 0 0 8px rgba(245,124,0,0.5); }
+.cube-green  { color: var(--green);  text-shadow: 0 0 8px rgba(34,168,90,0.5); }
+.cube-white  { color: var(--white); }
+
+/* Legacy aliases used throughout the app */
+.neon-green   { color: var(--green);  text-shadow: 0 0 8px rgba(34,168,90,0.6); }
+.neon-cyan    { color: var(--blue);   text-shadow: 0 0 8px rgba(59,111,240,0.6); }
+.neon-magenta { color: var(--red);    text-shadow: 0 0 8px rgba(232,37,58,0.6); }
+.neon-yellow  { color: var(--yellow); text-shadow: 0 0 8px rgba(245,196,0,0.5); }
+
+/* ── Pixel rainbow divider (cute Rubik's touch) ─────────────────────── */
+.rainbow-bar {
+  height: 6px;
+  background: linear-gradient(90deg,
+    var(--red) 0%, var(--red) 17%,
+    var(--orange) 17%, var(--orange) 34%,
+    var(--yellow) 34%, var(--yellow) 50%,
+    var(--green) 50%, var(--green) 67%,
+    var(--blue) 67%, var(--blue) 84%,
+    #9b59b6 84%, #9b59b6 100%
+  );
+  image-rendering: pixelated;
+}
+
+/* ── Cards & Boxes ──────────────────────────────────────────────────── */
 .retro-box {
   background: var(--bg2);
-  border: 2px solid var(--green);
-  box-shadow: 0 0 8px var(--green), inset 0 0 8px rgba(0, 255, 65, 0.05);
+  border: 2px solid var(--border);
+  border-top: 3px solid var(--yellow);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.4), 0 0 12px rgba(245,196,0,0.08);
   padding: 1.5rem;
 }
+
 .retro-box-cyan {
   background: var(--bg2);
-  border: 2px solid var(--cyan);
-  box-shadow: 0 0 8px var(--cyan), inset 0 0 8px rgba(0, 255, 255, 0.05);
+  border: 2px solid var(--border);
+  border-top: 3px solid var(--blue);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.4), 0 0 12px rgba(59,111,240,0.1);
   padding: 1.5rem;
 }
+
 .retro-box-magenta {
   background: var(--bg2);
-  border: 2px solid var(--magenta);
-  box-shadow: 0 0 8px var(--magenta), inset 0 0 8px rgba(255, 0, 255, 0.05);
+  border: 2px solid var(--border);
+  border-top: 3px solid var(--red);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.4), 0 0 12px rgba(232,37,58,0.1);
   padding: 1.5rem;
 }
 
-/* Buttons */
+/* Windows-95 style raised box — very cute retro feel */
+.pixel-box {
+  background: var(--bg2);
+  border: 2px solid;
+  border-color: #5a5880 #1a193a #1a193a #5a5880;
+  padding: 1rem;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
 .btn-retro {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.65rem;
-  padding: 0.75rem 1.25rem;
-  background: transparent;
-  border: 2px solid var(--green);
-  color: var(--green);
+  font-size: 0.6rem;
+  padding: 0.7rem 1.2rem;
+  background: var(--yellow);
+  border: 2px solid;
+  border-color: #fff8c0 #a07e00 #a07e00 #fff8c0;
+  color: #1a1400;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  transition: all 0.15s;
-  text-shadow: 0 0 7px var(--green);
-  box-shadow: 0 0 8px var(--green);
-  display: inline-block;
+  letter-spacing: 0.05em;
+  transition: all 0.08s;
   text-decoration: none;
+  display: inline-block;
+  box-shadow: 3px 3px 0 #5a4600;
   position: relative;
-  overflow: hidden;
 }
+
 .btn-retro:hover {
-  background: rgba(0, 255, 65, 0.15);
-  box-shadow: 0 0 20px var(--green), 0 0 40px rgba(0, 255, 65, 0.3);
-  transform: translateY(-1px);
+  background: #ffe033;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 #5a4600;
 }
-.btn-retro:active { transform: translateY(1px); }
+
+.btn-retro:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #5a4600;
+}
 
 .btn-retro-cyan {
-  border-color: var(--cyan); color: var(--cyan);
-  text-shadow: 0 0 7px var(--cyan); box-shadow: 0 0 8px var(--cyan);
+  background: var(--blue);
+  border-color: #90acff #1a3a9a #1a3a9a #90acff;
+  color: #fff;
+  box-shadow: 3px 3px 0 #0d1f5a;
 }
-.btn-retro-cyan:hover {
-  background: rgba(0, 255, 255, 0.15);
-  box-shadow: 0 0 20px var(--cyan), 0 0 40px rgba(0, 255, 255, 0.3);
-}
-.btn-retro-magenta {
-  border-color: var(--magenta); color: var(--magenta);
-  text-shadow: 0 0 7px var(--magenta); box-shadow: 0 0 8px var(--magenta);
-}
-.btn-retro-magenta:hover {
-  background: rgba(255, 0, 255, 0.15);
-  box-shadow: 0 0 20px var(--magenta), 0 0 40px rgba(255, 0, 255, 0.3);
-}
-.btn-retro-yellow {
-  border-color: var(--yellow); color: var(--yellow);
-  text-shadow: 0 0 7px var(--yellow); box-shadow: 0 0 8px var(--yellow);
-}
-.btn-retro-yellow:hover { background: rgba(255, 255, 0, 0.15); box-shadow: 0 0 20px var(--yellow); }
+.btn-retro-cyan:hover { background: #5585ff; box-shadow: 4px 4px 0 #0d1f5a; transform: translate(-1px,-1px); }
+.btn-retro-cyan:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 #0d1f5a; }
 
-/* Navigation */
+.btn-retro-magenta {
+  background: var(--red);
+  border-color: #ff8090 #7a0010 #7a0010 #ff8090;
+  color: #fff;
+  box-shadow: 3px 3px 0 #5a0010;
+}
+.btn-retro-magenta:hover { background: #ff4455; box-shadow: 4px 4px 0 #5a0010; transform: translate(-1px,-1px); }
+.btn-retro-magenta:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 #5a0010; }
+
+.btn-retro-yellow {
+  background: var(--orange);
+  border-color: #ffb060 #7a3e00 #7a3e00 #ffb060;
+  color: #fff;
+  box-shadow: 3px 3px 0 #4a2500;
+}
+.btn-retro-yellow:hover { background: #ff9020; box-shadow: 4px 4px 0 #4a2500; transform: translate(-1px,-1px); }
+.btn-retro-yellow:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 #4a2500; }
+
+.btn-retro-green {
+  background: var(--green);
+  border-color: #70de90 #0a4a20 #0a4a20 #70de90;
+  color: #fff;
+  box-shadow: 3px 3px 0 #083015;
+}
+.btn-retro-green:hover { background: #28c86a; box-shadow: 4px 4px 0 #083015; transform: translate(-1px,-1px); }
+.btn-retro-green:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 #083015; }
+
+/* ── Navigation ─────────────────────────────────────────────────────── */
 .nav-retro {
-  background: rgba(3, 10, 3, 0.97);
-  border-bottom: 2px solid var(--green);
-  box-shadow: 0 2px 15px rgba(0, 255, 65, 0.3);
+  background: var(--bg2);
+  border-bottom: 3px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 1000;
 }
+
+/* Rainbow strip under nav */
+.nav-retro::after {
+  content: '';
+  display: block;
+  height: 4px;
+  background: linear-gradient(90deg,
+    var(--red) 0%, var(--red) 17%,
+    var(--orange) 17%, var(--orange) 34%,
+    var(--yellow) 34%, var(--yellow) 50%,
+    var(--green) 50%, var(--green) 67%,
+    var(--blue) 67%, var(--blue) 84%,
+    #9b59b6 84%, #9b59b6 100%
+  );
+}
+
 .nav-link {
   font-family: 'Press Start 2P', monospace;
   font-size: 0.5rem;
-  color: var(--text-dim);
+  color: var(--dim);
   text-decoration: none;
   padding: 0.5rem 0.6rem;
-  transition: color 0.2s;
-}
-.nav-link:hover, .nav-link.active {
-  color: var(--green);
-  text-shadow: 0 0 7px var(--green);
+  transition: color 0.15s;
+  letter-spacing: 0.03em;
 }
 
-/* Form inputs */
+.nav-link:hover { color: var(--yellow); }
+.nav-link.active { color: var(--yellow); }
+
+/* ── Form inputs ─────────────────────────────────────────────────────── */
 .input-retro {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-bottom: 2px solid var(--green);
-  color: var(--green);
+  background: var(--bg3);
+  border: 2px solid var(--border);
+  border-bottom: 3px solid var(--blue);
+  color: var(--text);
   font-family: 'VT323', monospace;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   padding: 0.6rem 0.75rem;
   width: 100%;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+
 .input-retro:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+  border-color: var(--yellow);
+  border-bottom-color: var(--yellow);
+  box-shadow: 0 0 0 2px rgba(245,196,0,0.15);
 }
+
 .input-retro::placeholder { color: var(--border); }
+
 .label-retro {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.55rem;
-  color: var(--text-dim);
-  letter-spacing: 0.1em;
+  font-size: 0.5rem;
+  color: var(--dim);
+  letter-spacing: 0.08em;
   display: block;
   margin-bottom: 0.4rem;
 }
 
-/* Algorithm cards */
+/* ── Algorithm cards ─────────────────────────────────────────────────── */
 .algo-card {
   background: var(--bg2);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   padding: 1rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
   position: relative;
 }
-.algo-card:hover { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0, 255, 255, 0.2); }
-.algo-card.learned { border-color: var(--green); box-shadow: 0 0 10px rgba(0, 255, 65, 0.3); }
+
+.algo-card:hover {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 1px var(--blue), 3px 3px 0 rgba(59,111,240,0.3);
+  transform: translate(-1px, -1px);
+}
+
+.algo-card.learned {
+  border-color: var(--green);
+  background: rgba(34,168,90,0.08);
+  box-shadow: 0 0 0 1px var(--green);
+}
+
 .algo-card.learned::after {
   content: '✓ LEARNED';
   position: absolute;
   top: 0.4rem; right: 0.5rem;
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.4rem;
+  font-size: 0.38rem;
   color: var(--green);
-  text-shadow: 0 0 5px var(--green);
 }
 
-/* Animations */
+/* ── Animations ─────────────────────────────────────────────────────── */
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 .blink { animation: blink 1s step-end infinite; }
-
-@keyframes glitch {
-  0% { transform: translate(0); }
-  20% { transform: translate(-2px, 2px); }
-  40% { transform: translate(2px, -2px); }
-  60% { transform: translate(-1px, 1px); }
-  80% { transform: translate(1px, -1px); }
-  100% { transform: translate(0); }
-}
 
 @keyframes spin { to { transform: rotate(360deg); } }
 .spinner {
   width: 24px; height: 24px;
-  border: 2px solid var(--border);
-  border-top-color: var(--green);
+  border: 3px solid var(--border);
+  border-top-color: var(--yellow);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 0.7s linear infinite;
   display: inline-block;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 8px; background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border: 1px solid var(--green); }
-::-webkit-scrollbar-thumb:hover { background: var(--green); }
+/* Cube spin for decorative cubes */
+@keyframes cube-spin {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(90deg); }
+  50%  { transform: rotate(180deg); }
+  75%  { transform: rotate(270deg); }
+  100% { transform: rotate(360deg); }
+}
 
-/* Tables */
-.retro-table { width: 100%; border-collapse: collapse; }
+/* ── Scrollbar ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg3); border: 1px solid var(--border); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--border); }
+
+/* ── Tables ──────────────────────────────────────────────────────────── */
+.retro-table { width: 100%; border-collapse: collapse; font-family: 'VT323', monospace; }
 .retro-table th {
   font-family: 'Press Start 2P', monospace;
   font-size: 0.5rem;
-  color: var(--cyan);
-  border-bottom: 2px solid var(--cyan);
+  color: var(--yellow);
+  border-bottom: 2px solid var(--yellow);
   padding: 0.75rem 1rem;
   text-align: left;
+  background: rgba(245,196,0,0.05);
 }
-.retro-table td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); }
-.retro-table tr:hover td { background: rgba(0, 255, 65, 0.04); }
+.retro-table td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); color: var(--text); }
+.retro-table tr:hover td { background: rgba(255,255,255,0.03); }
 
-/* Move notation chip */
+/* ── Move notation chip ─────────────────────────────────────────────── */
 .move-chip {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.6rem;
-  color: var(--cyan);
-  background: rgba(0, 255, 255, 0.07);
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  font-size: 0.55rem;
+  color: var(--text);
+  background: var(--bg3);
+  border: 1px solid var(--border);
   padding: 0.15rem 0.4rem;
   display: inline-block;
   margin: 0.1rem;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
 }
 
-/* Progress bar */
-.progress-bar { background: var(--bg3); border: 1px solid var(--border); height: 10px; overflow: hidden; }
+/* ── Progress bar ───────────────────────────────────────────────────── */
+.progress-bar { background: var(--bg3); border: 1px solid var(--border); height: 12px; overflow: hidden; }
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--green), var(--cyan));
-  box-shadow: 0 0 8px var(--green);
+  background: linear-gradient(90deg, var(--green), var(--blue));
   transition: width 0.5s ease;
+  box-shadow: 0 0 8px rgba(34,168,90,0.4);
 }
 
-/* Sticker colors */
-.sticker-white  { background: #ffffff; }
-.sticker-yellow { background: #ffdd00; }
-.sticker-green  { background: #00cc44; }
-.sticker-blue   { background: #0055ff; }
-.sticker-red    { background: #ee1111; }
-.sticker-orange { background: #ff8800; }
+/* ── Rubik's sticker colors ─────────────────────────────────────────── */
+.sticker-white  { background: #ffffff; border: 1px solid #ccc; }
+.sticker-yellow { background: #f5c400; border: 1px solid #a07e00; }
+.sticker-green  { background: #22a85a; border: 1px solid #0a4a20; }
+.sticker-blue   { background: #3b6ff0; border: 1px solid #1a3a9a; }
+.sticker-red    { background: #e8253a; border: 1px solid #7a0010; }
+.sticker-orange { background: #f57c00; border: 1px solid #7a3e00; }
 
-/* Alert */
+/* ── Alerts ─────────────────────────────────────────────────────────── */
 .alert-retro {
-  border-left: 4px solid var(--green);
-  background: rgba(0, 255, 65, 0.05);
+  border-left: 4px solid var(--yellow);
+  background: rgba(245,196,0,0.06);
   padding: 0.75rem 1rem;
+  color: var(--text);
 }
-.alert-error { border-left-color: var(--red); background: rgba(255, 68, 68, 0.05); color: var(--red); }
-.alert-warning { border-left-color: var(--yellow); background: rgba(255, 255, 0, 0.05); color: var(--yellow); }
+.alert-error {
+  border-left-color: var(--red);
+  background: rgba(232,37,58,0.08);
+  color: #ff8090;
+}
+.alert-warning {
+  border-left-color: var(--orange);
+  background: rgba(245,124,0,0.08);
+  color: #ffb060;
+}
 
-/* Pricing cards */
+/* ── Pricing cards ──────────────────────────────────────────────────── */
 .pricing-card {
   background: var(--bg2);
   border: 2px solid var(--border);
   padding: 2rem;
-  transition: all 0.3s;
+  transition: transform 0.2s;
+  position: relative;
 }
-.pricing-card.featured {
-  border-color: var(--cyan);
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-}
-.pricing-card:hover { transform: translateY(-4px); }
 
-/* Tab nav */
+.pricing-card.featured {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 1px var(--yellow), 4px 4px 0 rgba(245,196,0,0.2);
+}
+
+.pricing-card:hover { transform: translateY(-3px); }
+
+/* ── Tab nav ────────────────────────────────────────────────────────── */
 .tab-retro {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.5rem;
+  font-size: 0.48rem;
   padding: 0.6rem 1rem;
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-bottom: none;
-  color: var(--text-dim);
-  background: transparent;
-  transition: all 0.2s;
+  color: var(--dim);
+  background: var(--bg3);
+  transition: all 0.15s;
 }
-.tab-retro.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0, 255, 255, 0.05); }
-.tab-retro:hover:not(.active) { color: var(--green); border-color: var(--green); }
 
-/* Retro checkbox */
+.tab-retro.active {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  background: rgba(245,196,0,0.07);
+}
+
+.tab-retro:hover:not(.active) {
+  color: var(--text);
+  border-color: var(--blue);
+}
+
+/* ── Checkbox ───────────────────────────────────────────────────────── */
 .retro-checkbox {
   appearance: none;
   width: 18px; height: 18px;
-  border: 2px solid var(--green);
-  background: transparent;
+  border: 2px solid var(--border);
+  background: var(--bg3);
   cursor: pointer;
   position: relative;
   flex-shrink: 0;
   vertical-align: middle;
+  transition: border-color 0.15s;
 }
-.retro-checkbox:checked { background: rgba(0, 255, 65, 0.3); box-shadow: 0 0 6px var(--green); }
+
+.retro-checkbox:hover { border-color: var(--yellow); }
+.retro-checkbox:checked { background: var(--green); border-color: var(--green); }
 .retro-checkbox:checked::after {
   content: '✓';
   position: absolute;
   top: -3px; left: 1px;
-  color: var(--green);
+  color: #fff;
   font-size: 14px;
   font-weight: bold;
 }
 
-/* Section header */
+/* ── Section header ─────────────────────────────────────────────────── */
 .section-header {
   font-family: 'Press Start 2P', monospace;
-  color: var(--green);
-  text-shadow: 0 0 10px var(--green);
+  color: var(--yellow);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
   border-bottom: 2px solid var(--border);
   padding-bottom: 1rem;
   margin-bottom: 2rem;
 }
 
-/* Divider */
+/* ── Divider ────────────────────────────────────────────────────────── */
 .retro-divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+/* ── Pixel cube decoration (used in headings / hero) ────────────────── */
+.cube-face {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 3px;
+  background: #1a1900;
+  border: 2px solid #333;
+}
+
+.cube-face .s {
+  width: 14px; height: 14px;
+  border-radius: 1px;
+}
+
+/* ── Hero text ──────────────────────────────────────────────────────── */
+.hero-title {
+  font-family: 'Press Start 2P', monospace;
+  color: var(--yellow);
+  text-shadow: 3px 3px 0 var(--orange), 6px 6px 0 rgba(0,0,0,0.4);
+  line-height: 1.6;
+}
+
+/* ── Cute pixel border (multi-color corner accent) ───────────────────── */
+.pixel-corner {
+  position: relative;
+}
+.pixel-corner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 6px; height: 6px;
+  background: var(--red);
+}
+.pixel-corner::after {
+  content: '';
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 6px; height: 6px;
+  background: var(--blue);
+}
+
+/* ── Badge ──────────────────────────────────────────────────────────── */
+.badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid;
+  display: inline-block;
+}
+
+.badge-yellow { color: var(--yellow); border-color: var(--yellow); background: rgba(245,196,0,0.1); }
+.badge-green  { color: var(--green);  border-color: var(--green);  background: rgba(34,168,90,0.1); }
+.badge-red    { color: var(--red);    border-color: var(--red);    background: rgba(232,37,58,0.1); }
+.badge-blue   { color: var(--blue);   border-color: var(--blue);   background: rgba(59,111,240,0.1); }
