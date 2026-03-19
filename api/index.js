@@ -26,8 +26,12 @@ async function getListener() {
     const build = await import(serverBuildPath);
     console.log("[build] keys:", Object.keys(build));
 
-    // createRequestListener accepts the build directly in @react-router/node v7
-    listener = createRequestListener(build);
+    // createRequestListener expects { build, mode } — not the build directly
+    const serverBuild = build.default?.routes ? build.default : build;
+    listener = createRequestListener({
+      build: serverBuild,
+      mode: process.env.NODE_ENV ?? "production",
+    });
   }
   return listener;
 }
