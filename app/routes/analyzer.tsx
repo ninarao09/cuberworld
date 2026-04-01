@@ -65,7 +65,7 @@ export async function action({ request }: Route.ActionArgs) {
     }));
 
     const response = await client.messages.create({
-      model: "claude-opus-4-6",
+      model: "claude-sonnet-4-6",
       max_tokens: 1024,
       messages: [
         {
@@ -162,37 +162,56 @@ function VideoRecorder({ onAnalyze }: { onAnalyze: (frames: string[]) => void })
     setExtracting(true);
 
     return new Promise(resolve => {
-      const video = recordedVideoRef.current!;
+      const video = document.createElement("video");
+      video.preload = "auto";
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d")!;
       const frames: string[] = [];
       const numFrames = 8;
 
+      canvas.width = 640;
+      canvas.height = 360;
+
+      let duration = 0;
+      let phase: "discovering" | "capturing" = "capturing";
+
+      const captureFrame = (i: number) => {
+        if (i >= numFrames) {
+          setExtracting(false);
+          resolve(frames);
+          return;
+        }
+        video.currentTime = (duration / numFrames) * i;
+      };
+
+      video.onseeked = () => {
+        if (phase === "discovering") {
+          phase = "capturing";
+          duration = video.currentTime;
+          captureFrame(0);
+          return;
+        }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        frames.push(canvas.toDataURL("image/jpeg", 0.7));
+        captureFrame(frames.length);
+      };
+
       video.onloadedmetadata = () => {
-        canvas.width = 640;
-        canvas.height = 360;
-        const duration = video.duration;
+        if (!isFinite(video.duration)) {
+          phase = "discovering";
+          video.currentTime = Number.MAX_SAFE_INTEGER;
+        } else {
+          duration = video.duration;
+          captureFrame(0);
+        }
+      };
 
-        const captureFrame = (i: number) => {
-          if (i >= numFrames) {
-            setExtracting(false);
-            resolve(frames);
-            return;
-          }
-          video.currentTime = (duration / numFrames) * i;
-        };
-
-        video.onseeked = () => {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          frames.push(canvas.toDataURL("image/jpeg", 0.7));
-          captureFrame(frames.length);
-        };
-
-        captureFrame(0);
+      video.onerror = () => {
+        setExtracting(false);
+        resolve(frames);
       };
 
       video.src = recordedUrl;
-      video.load();
     });
   };
 
