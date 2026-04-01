@@ -224,6 +224,13 @@ function VideoRecorder({ onAnalyze }: { onAnalyze: (frames: string[]) => void })
     return () => { stream?.getTracks().forEach(t => t.stop()); };
   }, [stream]);
 
+  useEffect(() => {
+    if (!hasRecording && stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play();
+    }
+  }, [hasRecording, stream]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       {error && (
@@ -232,49 +239,41 @@ function VideoRecorder({ onAnalyze }: { onAnalyze: (frames: string[]) => void })
         </div>
       )}
 
-      {/* Live camera */}
-      <div style={{ position: "relative", background: "#000", border: "2px solid var(--green)", aspectRatio: "16/9", overflow: "hidden" }}>
-        <video ref={videoRef} muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        {!stream && (
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1rem" }}>
-            <div className="font-pixel" style={{ fontSize: "0.6rem", color: "var(--text-dim)" }}>CAMERA OFFLINE</div>
-            <button className="btn-retro" onClick={startCamera}>▶ ENABLE CAMERA</button>
-          </div>
-        )}
-        {recording && (
-          <div style={{ position: "absolute", top: "1rem", right: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <div style={{ width: 10, height: 10, background: "var(--red)", borderRadius: "50%", animation: "blink 0.8s step-end infinite" }} />
-            <span className="font-pixel" style={{ fontSize: "0.5rem", color: "var(--red)" }}>REC</span>
-          </div>
-        )}
-      </div>
-
-      {/* Recording controls */}
-      {stream && (
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          {!recording ? (
-            <button className="btn-retro btn-retro-magenta" onClick={startRecording} disabled={recording}>
-              ● START RECORDING
-            </button>
-          ) : (
-            <button className="btn-retro btn-retro-yellow" onClick={stopRecording}>
-              ■ STOP RECORDING
-            </button>
+      {/* Camera view */}
+      {!hasRecording && (
+        <div style={{ position: "relative", background: "#000", border: "2px solid var(--green)", aspectRatio: "16/9", overflow: "hidden" }}>
+          <video ref={videoRef} muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          {!stream && (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1rem" }}>
+              <div className="font-pixel" style={{ fontSize: "0.6rem", color: "var(--text-dim)" }}>CAMERA OFFLINE</div>
+              <button className="btn-retro" onClick={startCamera}>▶ ENABLE CAMERA</button>
+            </div>
+          )}
+          {recording && (
+            <div style={{ position: "absolute", top: "1rem", right: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <div style={{ width: 10, height: 10, background: "var(--red)", borderRadius: "50%", animation: "blink 0.8s step-end infinite" }} />
+              <span className="font-pixel" style={{ fontSize: "0.5rem", color: "var(--red)" }}>REC</span>
+            </div>
           )}
         </div>
       )}
 
-      {/* Recorded video preview */}
+      {/* Recorded video — separate container so native controls (progress bar) are not clipped */}
       {hasRecording && recordedUrl && (
-        <div>
-          <div className="font-pixel" style={{ fontSize: "0.45rem", color: "var(--text-dim)", marginBottom: "0.5rem" }}>RECORDED SOLVE</div>
+        <div style={{ border: "2px solid var(--green)", background: "#000" }}>
           <video
             ref={recordedVideoRef}
             src={recordedUrl}
             controls
-            style={{ width: "100%", border: "1px solid var(--border)" }}
+            style={{ width: "100%", display: "block" }}
           />
-          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.75rem" }}>
+        </div>
+      )}
+
+      {/* Controls */}
+      <div style={{ display: "flex", gap: "0.75rem" }}>
+        {hasRecording ? (
+          <>
             <button
               className="btn-retro btn-retro-cyan"
               onClick={handleAnalyze}
@@ -290,18 +289,37 @@ function VideoRecorder({ onAnalyze }: { onAnalyze: (frames: string[]) => void })
             </button>
             <button
               className="btn-retro"
-              onClick={() => { setHasRecording(false); setRecordedUrl(null); chunksRef.current = []; }}
+              onClick={() => {
+                if (recordedUrl) URL.revokeObjectURL(recordedUrl);
+                setHasRecording(false);
+                setRecordedUrl(null);
+                chunksRef.current = [];
+              }}
             >
               ↺ REDO
             </button>
-          </div>
-        </div>
-      )}
+          </>
+        ) : stream && (
+          <>
+            {!recording ? (
+              <button className="btn-retro btn-retro-magenta" onClick={startRecording}>
+                ● START RECORDING
+              </button>
+            ) : (
+              <button className="btn-retro btn-retro-yellow" onClick={stopRecording}>
+                ■ STOP RECORDING
+              </button>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
 // ─── Analysis Display ─────────────────────────────────────────────────────────
+
+const panelFont: React.CSSProperties = { fontFamily: "system-ui, -apple-system, sans-serif", fontSize: "0.9rem", lineHeight: 1.6 };
 
 function AnalysisResult({ text }: { text: string }) {
   const lines = text.split("\n");
@@ -317,13 +335,13 @@ function AnalysisResult({ text }: { text: string }) {
         }
         if (line.startsWith("- ")) {
           return (
-            <div key={i} className="font-retro" style={{ color: "var(--green)", paddingLeft: "1rem" }}>
+            <div key={i} style={{ ...panelFont, color: "var(--green)", paddingLeft: "1rem" }}>
               {line}
             </div>
           );
         }
         return line ? (
-          <div key={i} className="font-retro" style={{ color: "var(--text-dim)" }}>{line}</div>
+          <div key={i} style={{ ...panelFont, color: "var(--text-dim)" }}>{line}</div>
         ) : <div key={i} style={{ height: "0.5rem" }} />;
       })}
     </div>
@@ -408,80 +426,78 @@ export default function AnalyzerPage() {
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
-        {/* Recorder */}
-        <div>
-          <div className="font-pixel" style={{ fontSize: "0.5rem", color: "var(--text-dim)", marginBottom: "1rem" }}>
-            STEP 1: RECORD YOUR SOLVE
+      {/* Recorder — centered */}
+      <div style={{ maxWidth: "700px", margin: "0 auto" }}>
+        <div className="font-pixel" style={{ fontSize: "0.5rem", color: "var(--text-dim)", marginBottom: "1rem" }}>
+          STEP 1: RECORD YOUR SOLVE
+        </div>
+        {isClient ? (
+          <VideoRecorder onAnalyze={handleAnalyze} />
+        ) : (
+          <div style={{ height: "300px", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--border)" }}>
+            <div className="spinner" />
           </div>
-          {isClient ? (
-            <VideoRecorder onAnalyze={handleAnalyze} />
-          ) : (
-            <div style={{ height: "300px", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--border)" }}>
-              <div className="spinner" />
-            </div>
-          )}
+        )}
+      </div>
+
+      {/* Analysis — below */}
+      <div style={{ maxWidth: "700px", margin: "2rem auto 0" }}>
+        <div className="font-pixel" style={{ fontSize: "0.5rem", color: "var(--text-dim)", marginBottom: "1rem" }}>
+          STEP 2: AI ANALYSIS
         </div>
 
-        {/* Analysis */}
-        <div>
-          <div className="font-pixel" style={{ fontSize: "0.5rem", color: "var(--text-dim)", marginBottom: "1rem" }}>
-            STEP 2: AI ANALYSIS
-          </div>
-
-          <div className="retro-box-magenta" style={{ minHeight: "400px" }}>
-            {isAnalyzing && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "300px", gap: "1.5rem" }}>
-                <div className="spinner" style={{ width: 40, height: 40, borderWidth: 3, borderTopColor: "var(--magenta)", borderColor: "rgba(255,0,255,0.2)" }} />
-                <div className="font-pixel" style={{ fontSize: "0.5rem", color: "var(--magenta)" }}>
-                  ANALYZING SOLVE...
-                </div>
-                <div className="font-retro" style={{ color: "var(--text-dim)", fontSize: "1rem" }}>
-                  AI is reviewing your technique
-                </div>
+        <div className="retro-box-magenta" style={{ minHeight: "200px" }}>
+          {isAnalyzing && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "200px", gap: "1.5rem" }}>
+              <div className="spinner" style={{ width: 40, height: 40, borderWidth: 3, borderTopColor: "var(--magenta)", borderColor: "rgba(255,0,255,0.2)" }} />
+              <div className="font-pixel" style={{ fontSize: "0.5rem", color: "var(--magenta)" }}>
+                ANALYZING SOLVE...
               </div>
-            )}
-
-            {!isAnalyzing && analysisError && (
-              <div className="alert-retro alert-error">
-                <span className="font-pixel" style={{ fontSize: "0.5rem" }}>✗ {analysisError}</span>
+              <div style={{ ...panelFont, color: "var(--text-dim)" }}>
+                AI is reviewing your technique
               </div>
-            )}
+            </div>
+          )}
 
-            {!isAnalyzing && !analysis && !analysisError && (
-              <div style={{ textAlign: "center", padding: "3rem 1rem" }}>
-                <div className="font-pixel" style={{ fontSize: "0.6rem", color: "var(--border)", marginBottom: "1rem" }}>
-                  [AWAITING RECORDING]
+          {!isAnalyzing && analysisError && (
+            <div className="alert-retro alert-error">
+              <span className="font-pixel" style={{ fontSize: "0.5rem" }}>✗ {analysisError}</span>
+            </div>
+          )}
+
+          {!isAnalyzing && !analysis && !analysisError && (
+            <div style={{ textAlign: "center", padding: "2rem 1rem" }}>
+              <div className="font-pixel" style={{ fontSize: "0.6rem", color: "var(--border)", marginBottom: "1rem" }}>
+                [AWAITING RECORDING]
+              </div>
+              <p style={{ ...panelFont, color: "var(--text-dim)" }}>
+                Record a solve above, then click "Analyze with AI" to get personalized feedback.
+              </p>
+              <div style={{ marginTop: "1.5rem" }}>
+                <div className="font-pixel" style={{ fontSize: "0.45rem", color: "var(--text-dim)", marginBottom: "0.75rem" }}>
+                  WHAT THE AI LOOKS FOR:
                 </div>
-                <p className="font-retro" style={{ color: "var(--text-dim)" }}>
-                  Record a solve on the left, then click "Analyze with AI" to get personalized feedback.
-                </p>
-                <div style={{ marginTop: "2rem" }}>
-                  <div className="font-pixel" style={{ fontSize: "0.45rem", color: "var(--text-dim)", marginBottom: "0.75rem" }}>
-                    WHAT THE AI LOOKS FOR:
+                {["Finger tricks & ergonomics", "F2L pair efficiency", "Cross planning", "OLL/PLL recognition speed", "Lookahead & flow", "Pause reduction"].map(tip => (
+                  <div key={tip} style={{ ...panelFont, color: "var(--text-dim)", padding: "0.25rem 0" }}>
+                    ▸ {tip}
                   </div>
-                  {["Finger tricks & ergonomics", "F2L pair efficiency", "Cross planning", "OLL/PLL recognition speed", "Lookahead & flow", "Pause reduction"].map(tip => (
-                    <div key={tip} className="font-retro" style={{ color: "var(--text-dim)", padding: "0.25rem 0" }}>
-                      ▸ {tip}
-                    </div>
-                  ))}
-                </div>
+                ))}
               </div>
-            )}
+            </div>
+          )}
 
-            {!isAnalyzing && analysis && (
-              <div>
-                <div className="font-pixel" style={{ fontSize: "0.5rem", color: "var(--magenta)", marginBottom: "1.5rem" }}>
-                  ✓ ANALYSIS COMPLETE
-                </div>
-                <AnalysisResult text={analysis} />
-                <div className="retro-divider" />
-                <div className="font-retro" style={{ color: "var(--text-dim)", fontSize: "0.85rem" }}>
-                  Powered by Claude AI · For best results, ensure good lighting and a visible cube
-                </div>
+          {!isAnalyzing && analysis && (
+            <div>
+              <div className="font-pixel" style={{ fontSize: "0.5rem", color: "var(--magenta)", marginBottom: "1.5rem" }}>
+                ✓ ANALYSIS COMPLETE
               </div>
-            )}
-          </div>
+              <AnalysisResult text={analysis} />
+              <div className="retro-divider" />
+              <div style={{ ...panelFont, fontSize: "0.85rem", color: "var(--text-dim)" }}>
+                Powered by Claude AI · For best results, ensure good lighting and a visible cube
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -495,7 +511,7 @@ export default function AnalyzerPage() {
             { icon: "⏱", tip: "Full solve — record from scramble to solved state" },
             { icon: "🎥", tip: "Steady camera — use a phone stand or prop it up" },
           ].map(({ icon, tip }) => (
-            <div key={tip} className="font-retro" style={{ color: "var(--text-dim)", display: "flex", gap: "0.5rem" }}>
+            <div key={tip} style={{ ...panelFont, color: "var(--text-dim)", display: "flex", gap: "0.5rem" }}>
               <span>{icon}</span><span>{tip}</span>
             </div>
           ))}
