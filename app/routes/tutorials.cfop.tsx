@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useFetcher, useLoaderData } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import type { Route } from "./+types/tutorials.cfop";
 import { OLL_ALGORITHMS, PLL_ALGORITHMS, OLL_CATEGORIES, PLL_CATEGORIES } from "../lib/algorithms";
 import { getSupabaseServerClient } from "../lib/supabase.server";
@@ -29,70 +29,55 @@ export async function loader({ request }: Route.LoaderArgs) {
   }
 }
 
-function AlgorithmCard({ algo, isLearned, onToggle, userId }: {
-  algo: { id: string; name: string; alg: string; altAlg?: string };
-  isLearned: boolean;
-  onToggle: (id: string) => void;
-  userId: string | null;
-}) {
-  const fetcher = useFetcher();
 
-  const handleToggle = () => {
-    if (!userId) return;
-    onToggle(algo.id);
-    fetcher.submit(
-      { algorithmId: algo.id, learned: String(!isLearned) },
-      { method: "post", action: "/api/progress" }
-    );
-  };
+type MemoryState = "red" | "yellow" | "green" | null;
 
-  return (
-    <div className={`algo-card${isLearned ? " learned" : ""}`} onClick={userId ? handleToggle : undefined}>
-      <div className="font-pixel" style={{ fontSize: "0.45rem", color: "var(--text-dim)", marginBottom: "0.5rem" }}>
-        {algo.id}
-      </div>
-      <div className="font-retro" style={{ fontSize: "1.1rem", color: "var(--cyan)", marginBottom: "0.5rem", letterSpacing: "0.05em" }}>
-        {algo.alg}
-      </div>
-      {algo.altAlg && (
-        <div className="font-retro" style={{ fontSize: "0.85rem", color: "var(--text-dim)" }}>
-          alt: {algo.altAlg}
-        </div>
-      )}
-      {!userId && (
-        <div className="font-pixel" style={{ fontSize: "0.35rem", color: "var(--border)", marginTop: "0.5rem" }}>
-          LOGIN TO TRACK
-        </div>
-      )}
-    </div>
-  );
-}
+const OLL_STATE_CYCLE: Record<string, MemoryState> = { "null": "red", "red": "yellow", "yellow": "green", "green": null };
+const OLL_STATE_LABEL: Record<string, string> = { red: "CAN'T REMEMBER", yellow: "GETTING THERE", green: "GOT IT" };
+const OLL_STATE_COLOR: Record<string, string> = { red: "var(--red, #ff4444)", yellow: "var(--yellow)", green: "var(--green)" };
+const OLL_STATE_BG: Record<string, string> = { red: "rgba(255,68,68,0.08)", yellow: "rgba(245,196,0,0.08)", green: "rgba(0,255,65,0.08)" };
 
 export default function CFOPPage() {
-  const { user, learnedAlgorithms: initialLearned } = useLoaderData<typeof loader>();
+  const { user } = useLoaderData<typeof loader>();
   const [activeTab, setActiveTab] = useState<"overview" | "f2l" | "oll" | "pll">("overview");
   const [ollCategory, setOllCategory] = useState<string>("All");
   const [pllCategory, setPllCategory] = useState<string>("All");
-  const [learned, setLearned] = useState<Set<string>>(new Set(initialLearned));
+  const [ollMemory, setOllMemory] = useState<Record<string, MemoryState>>({});
+  const [pllMemory, setPllMemory] = useState<Record<string, MemoryState>>({});
 
   useEffect(() => {
-    setLearned(new Set(initialLearned));
-  }, [initialLearned]);
+    const saved = localStorage.getItem("oll-memory");
+    if (saved) setOllMemory(JSON.parse(saved));
+    const savedPll = localStorage.getItem("pll-memory");
+    if (savedPll) setPllMemory(JSON.parse(savedPll));
+  }, []);
 
-  const toggleLearned = (id: string) => {
-    setLearned(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  const cycleOllMemory = (id: string) => {
+    setOllMemory(prev => {
+      const current = prev[id] ?? null;
+      const next = OLL_STATE_CYCLE[String(current)];
+      const updated = { ...prev, [id]: next };
+      localStorage.setItem("oll-memory", JSON.stringify(updated));
+      return updated;
     });
   };
+
+  const cyclePllMemory = (id: string) => {
+    setPllMemory(prev => {
+      const current = prev[id] ?? null;
+      const next = OLL_STATE_CYCLE[String(current)];
+      const updated = { ...prev, [id]: next };
+      localStorage.setItem("pll-memory", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
 
   const filteredOll = ollCategory === "All" ? OLL_ALGORITHMS : OLL_ALGORITHMS.filter(a => a.category === ollCategory);
   const filteredPll = pllCategory === "All" ? PLL_ALGORITHMS : PLL_ALGORITHMS.filter(a => a.category === pllCategory);
 
-  const ollProgress = OLL_ALGORITHMS.filter(a => learned.has(a.id)).length;
-  const pllProgress = PLL_ALGORITHMS.filter(a => learned.has(a.id)).length;
+  const ollProgress = OLL_ALGORITHMS.filter(a => ollMemory[a.id] === "green").length;
+  const pllProgress = PLL_ALGORITHMS.filter(a => pllMemory[a.id] === "green").length;
 
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "3rem 2rem" }}>
@@ -233,14 +218,17 @@ export default function CFOPPage() {
               <h2 style={{ fontSize: "0.7rem", margin: 0 }}>
                 OLL ALGORITHMS
                 <span className="font-pixel" style={{ fontSize: "0.45rem", color: "var(--text-dim)", marginLeft: "1rem" }}>
-                  ({learned.size > 0 ? `${ollProgress}/57 LEARNED` : "57 CASES"})
+                  {ollProgress}/57 MASTERED
                 </span>
               </h2>
-              {!user && (
-                <Link to="/login" className="font-pixel" style={{ fontSize: "0.4rem", color: "var(--yellow)" }}>
-                  LOGIN TO TRACK PROGRESS
-                </Link>
-              )}
+              <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                {(["red", "yellow", "green"] as const).map(s => (
+                  <span key={s} style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: "0.75rem", color: OLL_STATE_COLOR[s], display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: OLL_STATE_COLOR[s], display: "inline-block" }} />
+                    {OLL_STATE_LABEL[s]}
+                  </span>
+                ))}
+              </div>
             </div>
 
             {/* Category filter */}
@@ -263,23 +251,52 @@ export default function CFOPPage() {
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "0.75rem" }}>
-              {filteredOll.map(algo => (
-                <AlgorithmCard
-                  key={algo.id}
-                  algo={algo}
-                  isLearned={learned.has(algo.id)}
-                  onToggle={toggleLearned}
-                  userId={user?.id ?? null}
-                />
-              ))}
+            {/* Single panel list */}
+            <div style={{ border: "1px solid var(--border)", borderRadius: "2px", overflow: "hidden" }}>
+              {filteredOll.map((algo, i) => {
+                const state = ollMemory[algo.id] ?? null;
+                const borderColor = state ? OLL_STATE_COLOR[state] : "var(--border)";
+                const bg = state ? OLL_STATE_BG[state] : "transparent";
+                return (
+                  <div
+                    key={algo.id}
+                    onClick={() => cycleOllMemory(algo.id)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "1.25rem",
+                      padding: "0.85rem 1rem",
+                      borderBottom: i < filteredOll.length - 1 ? "1px solid var(--border)" : "none",
+                      borderLeft: `4px solid ${borderColor}`,
+                      background: bg,
+                      cursor: "pointer",
+                      transition: "background 0.15s",
+                    }}
+                  >
+                    <span className="font-pixel" style={{ fontSize: "0.4rem", color: "var(--text-dim)", minWidth: "3.5rem" }}>
+                      {algo.id}
+                    </span>
+                    <span style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: "0.9rem", color: "var(--cyan)", flex: 1 }}>
+                      {algo.alg}
+                    </span>
+                    {algo.altAlg && (
+                      <span style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: "0.8rem", color: "var(--text-dim)" }}>
+                        alt: {algo.altAlg}
+                      </span>
+                    )}
+                    <span style={{
+                      fontFamily: "system-ui, -apple-system, sans-serif", fontSize: "0.75rem",
+                      color: state ? OLL_STATE_COLOR[state] : "var(--border)",
+                      minWidth: "7rem", textAlign: "right",
+                    }}>
+                      {state ? OLL_STATE_LABEL[state] : "CLICK TO RATE"}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
-            {user && (
-              <div className="font-retro" style={{ marginTop: "1rem", color: "var(--text-dim)", fontSize: "0.9rem" }}>
-                Click any algorithm card to mark it as learned. Progress is saved automatically.
-              </div>
-            )}
+            <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", marginTop: "0.75rem", color: "var(--text-dim)", fontSize: "0.85rem" }}>
+              Click a row to cycle: unrated → can't remember → getting there → got it
+            </div>
           </div>
         )}
 
@@ -290,14 +307,17 @@ export default function CFOPPage() {
               <h2 style={{ fontSize: "0.7rem", margin: 0 }}>
                 PLL ALGORITHMS
                 <span className="font-pixel" style={{ fontSize: "0.45rem", color: "var(--text-dim)", marginLeft: "1rem" }}>
-                  ({pllProgress}/21 LEARNED)
+                  {pllProgress}/21 MASTERED
                 </span>
               </h2>
-              {!user && (
-                <Link to="/login" className="font-pixel" style={{ fontSize: "0.4rem", color: "var(--yellow)" }}>
-                  LOGIN TO TRACK PROGRESS
-                </Link>
-              )}
+              <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                {(["red", "yellow", "green"] as const).map(s => (
+                  <span key={s} style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: "0.75rem", color: OLL_STATE_COLOR[s], display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: OLL_STATE_COLOR[s], display: "inline-block" }} />
+                    {OLL_STATE_LABEL[s]}
+                  </span>
+                ))}
+              </div>
             </div>
 
             {/* Category filter */}
@@ -320,37 +340,54 @@ export default function CFOPPage() {
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "0.75rem" }}>
-              {filteredPll.map(algo => (
-                <div key={algo.id} className={`algo-card${learned.has(algo.id) ? " learned" : ""}`}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
-                    <span className="font-pixel" style={{ fontSize: "0.45rem", color: "var(--text-dim)" }}>{algo.id}</span>
+            {/* Single panel list */}
+            <div style={{ border: "1px solid var(--border)", borderRadius: "2px", overflow: "hidden" }}>
+              {filteredPll.map((algo, i) => {
+                const state = pllMemory[algo.id] ?? null;
+                const borderColor = state ? OLL_STATE_COLOR[state] : "var(--border)";
+                const bg = state ? OLL_STATE_BG[state] : "transparent";
+                return (
+                  <div
+                    key={algo.id}
+                    onClick={() => cyclePllMemory(algo.id)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "1.25rem",
+                      padding: "0.85rem 1rem",
+                      borderBottom: i < filteredPll.length - 1 ? "1px solid var(--border)" : "none",
+                      borderLeft: `4px solid ${borderColor}`,
+                      background: bg,
+                      cursor: "pointer",
+                      transition: "background 0.15s",
+                    }}
+                  >
+                    <span className="font-pixel" style={{ fontSize: "0.4rem", color: "var(--text-dim)", minWidth: "3.5rem" }}>
+                      {algo.id}
+                    </span>
+                    <span className="font-pixel" style={{ fontSize: "0.4rem", color: "var(--magenta)", minWidth: "4rem" }}>
+                      {algo.name}
+                    </span>
+                    <span style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: "0.9rem", color: "var(--cyan)", flex: 1 }}>
+                      {algo.alg}
+                    </span>
                     {algo.probability && (
-                      <span className="font-pixel" style={{ fontSize: "0.35rem", color: "var(--border)" }}>{algo.probability}</span>
+                      <span style={{ fontFamily: "system-ui, -apple-system, sans-serif", fontSize: "0.75rem", color: "var(--text-dim)" }}>
+                        {algo.probability}
+                      </span>
                     )}
+                    <span style={{
+                      fontFamily: "system-ui, -apple-system, sans-serif", fontSize: "0.75rem",
+                      color: state ? OLL_STATE_COLOR[state] : "var(--border)",
+                      minWidth: "7rem", textAlign: "right",
+                    }}>
+                      {state ? OLL_STATE_LABEL[state] : "CLICK TO RATE"}
+                    </span>
                   </div>
-                  <div className="font-pixel" style={{ fontSize: "0.5rem", color: "var(--magenta)", marginBottom: "0.5rem" }}>{algo.name}</div>
-                  <div className="font-retro" style={{ fontSize: "1rem", color: "var(--cyan)", marginBottom: "0.5rem" }}>{algo.alg}</div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.5rem" }}>
-                    <span className="font-pixel" style={{ fontSize: "0.35rem", color: "var(--border)" }}>{algo.category}</span>
-                    {user && (
-                      <button
-                        className="font-pixel"
-                        style={{
-                          fontSize: "0.35rem", padding: "0.2rem 0.5rem",
-                          background: learned.has(algo.id) ? "rgba(0,255,65,0.15)" : "transparent",
-                          border: `1px solid ${learned.has(algo.id) ? "var(--green)" : "var(--border)"}`,
-                          color: learned.has(algo.id) ? "var(--green)" : "var(--text-dim)",
-                          cursor: "pointer",
-                        }}
-                        onClick={() => toggleLearned(algo.id)}
-                      >
-                        {learned.has(algo.id) ? "✓ LEARNED" : "MARK LEARNED"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
+            </div>
+
+            <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", marginTop: "0.75rem", color: "var(--text-dim)", fontSize: "0.85rem" }}>
+              Click a row to cycle: unrated → can't remember → getting there → got it
             </div>
           </div>
         )}
